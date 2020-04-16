@@ -19,6 +19,7 @@ parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Defau
 parser.add_argument('--cuda', action='store_true', help='use cuda?')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
+parser.add_argument('data', metavar='DIR', help='path to dataset')
 opt = parser.parse_args()
 
 print(opt)
@@ -31,8 +32,8 @@ torch.manual_seed(opt.seed)
 device = torch.device("cuda" if opt.cuda else "cpu")
 
 print('===> Loading datasets')
-train_set = get_training_set(opt.upscale_factor)
-test_set = get_test_set(opt.upscale_factor)
+train_set = get_training_set(opt.upscale_factor, opt.data)
+test_set = get_test_set(opt.upscale_factor, opt.data)
 training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, batch_size=opt.batchSize, shuffle=True)
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
