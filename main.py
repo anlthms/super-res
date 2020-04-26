@@ -6,6 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
+from torch.utils.tensorboard import SummaryWriter
 from model import Net
 from data import get_training_set, get_test_set
 
@@ -42,6 +43,7 @@ model = Net(upscale_factor=opt.upscale_factor).to(device)
 criterion = nn.MSELoss()
 
 optimizer = optim.Adam(model.parameters(), lr=opt.lr)
+writer = SummaryWriter()
 
 
 def train(epoch):
@@ -56,8 +58,9 @@ def train(epoch):
         optimizer.step()
 
         print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, iteration, len(training_data_loader), loss.item()))
-
-    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
+    epoch_loss /= len(training_data_loader)
+    writer.add_scalar('loss', epoch_loss, epoch)
+    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss))
 
 
 def test():
