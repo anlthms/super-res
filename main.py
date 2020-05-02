@@ -9,6 +9,8 @@ from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
 from model import Net
 from data import get_training_set, get_test_set
+import warnings
+warnings.filterwarnings("ignore", category=FutureWarning)
 
 # Training settings
 parser = argparse.ArgumentParser(description='PyTorch Super Res Example')
