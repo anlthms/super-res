@@ -1,0 +1,21 @@
+program: main.py
+
+method: grid
+metric:
+  goal: maximize
+  name: psnr
+parameters:
+  num_fm:
+    values: [32, 64]
+  learning_rate:
+    values: [0.001, 0.01]
+  optimizer:
+    values: ['Adam', 'AdamW']
+
+command:
+  - ${env}
+  - python3
+  - ${program}
+  - "--upscale_factor=2"
+  - "--nEpochs=10"
+  - "BSDS300/images"

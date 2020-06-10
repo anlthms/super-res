@@ -1,6 +1,16 @@
 from __future__ import print_function
 import argparse
 from math import log10
+import os
+
+import wandb
+hyperparameter_defaults = dict(
+    num_fm = 64,
+    learning_rate = 0.01,
+    optimizer = 'Adam'
+    )
+wandb.init(config=hyperparameter_defaults)
+config = wandb.config
 
 import torch
 import torch.nn as nn
@@ -18,7 +28,6 @@ parser.add_argument('--upscale_factor', type=int, required=True, help="super res
 parser.add_argument('--batchSize', type=int, default=64, help='training batch size')
 parser.add_argument('--testBatchSize', type=int, default=10, help='testing batch size')
 parser.add_argument('--nEpochs', type=int, default=2, help='number of epochs to train for')
-parser.add_argument('--lr', type=float, default=0.01, help='Learning Rate. Default=0.01')
 parser.add_argument('--cuda', action='store_true', help='use cuda?')
 parser.add_argument('--threads', type=int, default=4, help='number of threads for data loader to use')
 parser.add_argument('--seed', type=int, default=123, help='random seed to use. Default=123')
@@ -41,12 +50,18 @@ training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, ba
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
 print('===> Building model')
-model = Net(upscale_factor=opt.upscale_factor).to(device)
+model = Net(upscale_factor=opt.upscale_factor, num_fm=config.num_fm).to(device)
 criterion = nn.MSELoss()
 
-optimizer = optim.Adam(model.parameters(), lr=opt.lr)
-writer = SummaryWriter()
+if config.optimizer == 'Adam':
+    optimizer = optim.Adam(model.parameters(), lr=config.learning_rate)
+elif config.optimizer == 'AdamW':
+    optimizer = optim.AdamW(model.parameters(), lr=config.learning_rate)
+else:
+    raise NameError()
 
+writer = SummaryWriter()
+wandb.watch(model)
 
 def train(epoch):
     epoch_loss = 0
@@ -75,6 +90,7 @@ def test():
             mse = criterion(prediction, target)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
+    wandb.log({"psnr": avg_psnr})
     print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
 
 
@@ -88,3 +104,4 @@ for epoch in range(1, opt.nEpochs + 1):
     test()
     if epoch % 10 == 0:
         checkpoint(epoch)
+        torch.save(model.state_dict(), os.path.join(wandb.run.dir, 'model.pt'))
